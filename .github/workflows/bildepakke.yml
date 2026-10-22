@@ -1,1 +1,39 @@
-.github/workflows/bildepakke.yml
+name: Bildepakke
+
+on:
+  schedule:
+    - cron: "17 5 1 * *"
+  workflow_dispatch:
+    inputs:
+      antall:
+        description: "Antall nye bilder å hente"
+        required: false
+        default: "15"
+
+permissions:
+  contents: write
+
+jobs:
+  hent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Hent nye bilder fra Wiki Loves Earth
+        run: python hent_bilder.py "${{ github.event.inputs.antall || '15' }}"
+
+      - name: Lagre i repoet
+        run: |
+          git config user.name "bildepakke-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bilder
+          if git diff --cached --quiet; then
+            echo "Ingen nye bilder."
+          else
+            git commit -m "Nye bilder $(date -u +%Y-%m-%d)"
+            git push
+          fi
